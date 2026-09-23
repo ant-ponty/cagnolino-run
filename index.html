@@ -9,7 +9,7 @@
 html,body{width:100%;height:100%;overflow:hidden;font-family:"Trebuchet MS",Nunito,system-ui,sans-serif;background:#1a0f2e;color:#fff;touch-action:none}
 #wrap{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
 canvas{display:block;max-width:100%;max-height:100%;background:#87ceeb;border-radius:8px;box-shadow:0 8px 40px #0008}
-.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#2d1b4e cc,#1a3a5c);z-index:5;overflow:auto;padding:16px}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#2d1b4e,#1a3a5c);z-index:5;overflow:auto;padding:16px}
 .overlay.hidden{display:none}
 .card{background:#fffef8;color:#2a1a12;border-radius:24px;padding:22px 20px;max-width:560px;width:100%;text-align:center;box-shadow:0 12px 40px #0005;border:4px solid #f4c95d}
 h1{font-size:clamp(1.6rem,5vw,2.4rem);color:#c45c26;text-shadow:2px 2px 0 #ffe8a3;margin-bottom:8px}
@@ -97,16 +97,13 @@ function isTouch(){return matchMedia('(pointer:coarse)').matches||'ontouchstart'
 function startLevel(){
   cam=0;runT=0;ents=[];particles=[];checkpoint=80;invuln=90;flash=0;
   powers={inv:0,djump:0,spd:0,mult:0};canDjump=false;
-  const th=THEMES[(level-1)%THEMES.length];
   worldLen=3800+level*450;
-  dog={x:120,y:GROUND,vy:0,w:46,h:40,on=true,duck:false,dead:false,anim:0};
-  dog.onG=true;
-  buildWorld(th);
+  dog={x:120,y:GROUND,vy:0,w:46,h:40,onG:true,duck:false,dead:false,anim:0};
+  buildWorld();
 }
 
-function buildWorld(th){
+function buildWorld(){
   ents.push({type:'flag',x:worldLen-180,y:GROUND-90,w:24,h:90});
-  const rng=(a,b)=>a+((level*9973+a*13+b*17)%97)/97*(b-a);
   let x=420;
   let i=0;
   while(x<worldLen-500){
@@ -206,8 +203,6 @@ function tick(){
   dog.vy+=breed.grav;dog.y+=dog.vy;
   dog.onG=false;
   if(dog.y>=GROUND){dog.y=GROUND;dog.vy=0;dog.onG=true;if(powers.djump>0)canDjump=true}
-  // plats
-  const db=dogBox();
   for(const e of ents){
     if(e.type==='plat' && dog.vy>=0){
       const feet=dog.y+dog.h;
@@ -219,7 +214,6 @@ function tick(){
   }
   if(powers.inv>0)powers.inv--;if(powers.djump>0)powers.djump--;if(powers.spd>0)powers.spd--;if(powers.mult>0)powers.mult--;
   if(invuln>0)invuln--;if(flash>0)flash--;
-  // collide
   const box=dogBox();
   for(const e of ents){
     if(e.dead)continue;
@@ -250,23 +244,14 @@ function draw(){
   const th=THEMES[(level-1)%THEMES.length];
   const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,th.sky[0]);g.addColorStop(1,th.sky[1]);
   ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-  // clouds
   ctx.globalAlpha=0.45;ctx.fillStyle='#fff';
   for(let i=0;i<8;i++){const cx=((i*180-cam*0.3)%(W+200))-40;roundRect(cx,40+(i%3)*30,90,28,14);ctx.fill()}
   ctx.globalAlpha=1;
   ctx.font='28px serif';
   for(let i=0;i<12;i++){const dx=((i*220-cam*0.5)%(W+240))-60;ctx.fillText(th.deco,dx,GROUND-40-(i%2)*20)}
-  // ground
   ctx.fillStyle=th.ground;ctx.fillRect(0,GROUND+28,W,H);
   ctx.fillStyle=th.dirt;ctx.fillRect(0,GROUND+28,W,18);
-  // holes punch
-  ctx.save();
-  ents.forEach(e=>{
-    const sx=e.x-cam;
-    if(e.type==='hole'){ctx.clearRect(sx,GROUND+20,e.w,H);ctx.fillStyle=th.sky[1];ctx.fillRect(sx,GROUND+20,e.w,H-GROUND)}
-  });
-  ctx.restore();
-  // grass line
+  ents.forEach(e=>{if(e.type==='hole'){ctx.fillStyle='#1a1020';ctx.fillRect(e.x-cam,GROUND+20,e.w,H-GROUND)}});
   ctx.fillStyle=th.ground;ctx.fillRect(0,GROUND+20,W,12);
   ents.forEach(e=>{if(e.type==='hole'){ctx.fillStyle='#1a1020';ctx.fillRect(e.x-cam,GROUND+20,e.w,H-GROUND)}});
 
@@ -306,7 +291,6 @@ function drawDog(){
 
 function loop(){tick();draw();requestAnimationFrame(loop)}
 
-// input
 addEventListener('keydown',e=>{
   if(e.code==='ArrowUp'||e.code==='KeyW'||e.code==='Space'){keys.up=true;e.preventDefault()}
   if(e.code==='ArrowDown'||e.code==='KeyS'){keys.down=true;e.preventDefault()}
@@ -323,7 +307,6 @@ document.getElementById('tdown').onpointerup=e=>{keys.down=false};
 document.getElementById('tdown').onpointerleave=()=>{keys.down=false};
 document.getElementById('mute').onclick=()=>{audioOn=!audioOn;document.getElementById('mute').textContent=audioOn?'🔊':'🔇';if(!audioOn)bgm(false);else if(state==='play'&&!paused)bgm(true)};
 
-// audio
 let oscBgm=null, bgmGain=null;
 function ensureAudio(){
   if(!ac){ac=new (window.AudioContext||window.webkitAudioContext)();}
